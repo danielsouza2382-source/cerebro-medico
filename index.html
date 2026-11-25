@@ -19,7 +19,7 @@ html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip}
 a{color:inherit}button,input{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-.app{display:grid;grid-template-rows:auto auto minmax(0,1fr);height:100dvh}
+.app{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);height:100dvh}
 header{display:flex;align-items:center;gap:16px;padding:12px max(2vw,16px);border-bottom:1px solid var(--line)}
 .brand{display:flex;flex-direction:column;line-height:1.15;margin-right:auto}
 .brand b{font-size:19px;font-weight:600;letter-spacing:-.01em}
@@ -35,15 +35,36 @@ header{display:flex;align-items:center;gap:16px;padding:12px max(2vw,16px);borde
 .results small{display:block;color:var(--mute);font-size:13px}
 .dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none;margin-top:6px}
 .prog{font-size:13px;color:var(--mute);white-space:nowrap}
-.bar{display:flex;gap:10px;align-items:center;padding:8px max(2vw,16px);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:8px max(2vw,16px);border-bottom:1px solid var(--line);min-width:0}
+.row{display:flex;gap:8px;align-items:center;min-width:0;flex-wrap:wrap}
+.areaswrap{flex:1 1 100%}
+#chips{display:contents}
+.flabel{flex:none;font-size:13px;color:var(--mute);white-space:nowrap}
+.chip[hidden]{display:none}
+.seg.sm button{height:30px;padding:0 10px;font-size:13px}
+.rowwrap{position:relative;min-width:0}
+.linkbtn{border:0;background:none;padding:0;color:var(--acc);text-decoration:underline;cursor:pointer;font:inherit}
+.qa{display:flex;flex-direction:column;gap:12px}
+.qi{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--panel)}
+.qi .q{margin:0 0 8px;font-weight:600}
+.qi details summary{display:inline-flex;align-items:center;gap:6px;cursor:pointer;list-style:none;height:34px;padding:0 14px;border-radius:17px;border:1px solid var(--line);background:var(--bg);font:500 14px/1 "IBM Plex Sans",sans-serif}
+.qi details summary::-webkit-details-marker{display:none}
+.qi details summary::before{content:"▸";font-size:11px;transition:transform .15s}
+.qi details[open] summary::before{transform:rotate(90deg)}
+.qi .a{margin-top:10px;padding:10px 12px;border-left:3px solid var(--acc);background:var(--bg);border-radius:0 8px 8px 0}
+.qi .a p{margin:0}
+
 .seg{display:flex;flex:none;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg button{height:34px;padding:0 12px;border:0;background:var(--bg);cursor:pointer;font-size:14px;white-space:nowrap}
 .seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
 .sep{width:1px;height:24px;background:var(--line);flex:none}
-.chip{flex:none;display:flex;align-items:center;gap:7px;height:34px;padding:0 11px;border-radius:17px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:13.5px;white-space:nowrap}
+.chip{flex:none;display:flex;align-items:center;gap:7px;height:32px;padding:0 11px;border-radius:17px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:13.5px;white-space:nowrap}
 .chip .dot{margin:0}
-.chip[aria-pressed=false]{opacity:.42}
-.chip[aria-pressed=false] .dot{background:transparent;box-shadow:inset 0 0 0 2px var(--c)}
+.chip.off{opacity:.42}
+.chip.off .dot{background:transparent;box-shadow:inset 0 0 0 2px var(--c)}
+.chip.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,var(--bg));font-weight:500}
+.chip.hid{opacity:.5;text-decoration:line-through}
+.chip.hid .dot{background:transparent;box-shadow:inset 0 0 0 2px var(--c)}
 .chip.ghost{border-style:dashed;color:var(--mute)}
 main{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);min-height:0}
 .map{position:relative;min-height:0;background:radial-gradient(circle at 1px 1px,var(--line) 1px,transparent 1.5px) 0 0/22px 22px}
@@ -113,6 +134,11 @@ a.wl:hover{background:color-mix(in srgb,var(--c) 12%,transparent)}
  .app{display:block;height:auto}
  header{flex-wrap:wrap;gap:10px}
  .search{order:3;width:100%}
+ .bar{gap:6px}
+ .rowwrap{width:100%}
+ .row,.row.areas{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px;flex:1 1 100%}
+ #chips{flex-wrap:nowrap}
+ .rowwrap.more::after{content:"";position:absolute;right:0;top:0;bottom:4px;width:36px;pointer-events:none;background:linear-gradient(to right,transparent,var(--bg))}
  main{display:block}
  .map{height:60vh;min-height:380px;border-bottom:1px solid var(--line)}
  .reader{border-left:0;overflow:visible}
@@ -137,10 +163,17 @@ a.wl:hover{background:color-mix(in srgb,var(--c) 12%,transparent)}
   <div class="prog" id="prog"></div>
  </header>
  <nav class="bar" aria-label="Visão e filtros">
-  <div class="seg" id="mode"><button data-m="area" aria-pressed="true">Por área</button><button data-m="periodo" aria-pressed="false">Por período</button></div>
-  <div class="seg" id="pers"></div>
-  <span class="sep"></span>
-  <div id="chips" style="display:flex;gap:8px"></div>
+  <div class="rowwrap"><div class="row">
+   <div class="seg" id="mode"><button data-m="area" aria-pressed="true">Por área</button><button data-m="periodo" aria-pressed="false">Por período</button></div>
+   <div class="seg" id="pers"></div>
+   <button class="chip ghost" id="idxbtn">Índice</button>
+  </div></div>
+  <div class="rowwrap areaswrap"><div class="row areas">
+   <span class="flabel">Áreas:</span>
+   <div class="seg sm" id="fmode"><button data-f="so" aria-pressed="true">Mostrar só</button><button data-f="sem" aria-pressed="false">Esconder</button></div>
+   <button class="chip ghost" id="clr" hidden>Limpar</button>
+   <div id="chips"></div>
+  </div></div>
  </nav>
  <main>
   <section class="map" id="map" aria-label="Mapa de conexões">
@@ -164,7 +197,7 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v)
 const isMobile=()=>matchMedia("(max-width:900px)").matches;
 let N=[],byId={},COL={},AREAS=[],MAXP=12,maxSeen=5,manifest={},news=[],newIds=new Set();
 let MAT=null,matPromise=null,updatesData=[];
-let visited=new Set(store.get("cm-visited",store.get("cm5p-visited",[]))),hiddenA=new Set(),perF=0,mode=store.get("cm-mode","area"),cur=null,G=null;
+let visited=new Set(store.get("cm-visited",store.get("cm5p-visited",[]))),selA=new Set(store.get("cm-areas",[])),fMode=store.get("cm-fmode","so"),perF=0,mode=store.get("cm-mode","area"),cur=null,G=null;
 const ordP=p=>`${p}º período`;
 
 async function getJSON(u){const r=await fetch(u,{cache:"no-cache"});if(!r.ok)throw new Error(u);return r.json()}
@@ -207,10 +240,29 @@ function buildBar(){
  $("#mode").querySelectorAll("button").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.m===mode);b.onclick=()=>{mode=b.dataset.m;store.set("cm-mode",mode);$("#mode").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));G&&G.setMode(mode)}});
  let ph=`<button data-p="0" aria-pressed="true">Todos</button>`;for(let p=1;p<=maxSeen;p++)ph+=`<button data-p="${p}" aria-pressed="false">${p}º</button>`;
  $("#pers").innerHTML=ph;
- $("#pers").onclick=e=>{const b=e.target.closest("button");if(!b)return;perF=+b.dataset.p;$("#pers").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));G&&G.filter()};
- $("#chips").innerHTML=AREAS.filter(a=>a.n!=="Início").map(a=>`<button class="chip" aria-pressed="true" data-a="${esc(a.n)}" style="--c:${a.c}"><span class="dot"></span>${esc(a.n)}</button>`).join("")+`<button class="chip ghost" id="idxbtn">Índice</button>`;
- $("#chips").onclick=e=>{const b=e.target.closest("button");if(!b)return;if(b.id==="idxbtn"){location.hash="indice";return}
-  const a=b.dataset.a,on=b.getAttribute("aria-pressed")==="true";b.setAttribute("aria-pressed",on?"false":"true");on?hiddenA.add(a):hiddenA.delete(a);G&&G.filter()};
+ $("#pers").onclick=e=>{const b=e.target.closest("button");if(!b)return;perF=+b.dataset.p;$("#pers").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));G&&G.filter();if(location.hash.slice(1)==="indice")showIndex()};
+ $("#idxbtn").onclick=()=>{location.hash="indice"};
+ $("#chips").innerHTML=AREAS.filter(a=>a.n!=="Início").map(a=>`<button class="chip" data-a="${esc(a.n)}" style="--c:${a.c}"><span class="dot"></span>${esc(a.n)}</button>`).join("");
+ [...selA].forEach(a=>{if(!COL[a])selA.delete(a)});
+ $("#chips").onclick=e=>{const b=e.target.closest("button[data-a]");if(!b)return;const a=b.dataset.a;selA.has(a)?selA.delete(a):selA.add(a);applyAreas()};
+ $("#fmode").onclick=e=>{const b=e.target.closest("button");if(!b)return;fMode=b.dataset.f;applyAreas()};
+ $("#clr").onclick=()=>{selA.clear();applyAreas()};
+ document.querySelectorAll(".bar .row").forEach(r=>{
+  const upd=()=>r.parentElement.classList.toggle("more",r.scrollLeft+r.clientWidth<r.scrollWidth-4);
+  r.addEventListener("scroll",upd,{passive:true});addEventListener("resize",upd);setTimeout(upd,50);
+  r.addEventListener("wheel",e=>{if(r.scrollWidth<=r.clientWidth+2||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;r.scrollLeft+=e.deltaY;e.preventDefault()},{passive:false});
+ });
+ applyAreas(true);
+}
+function areaOK(a){if(!selA.size||a==="Início")return true;return fMode==="so"?selA.has(a):!selA.has(a)}
+function applyAreas(first){
+ store.set("cm-areas",[...selA]);store.set("cm-fmode",fMode);
+ $("#fmode").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===fMode));
+ $("#chips").querySelectorAll("button[data-a]").forEach(b=>{const on=selA.has(b.dataset.a);
+  b.classList.toggle("sel",fMode==="so"&&on);b.classList.toggle("off",fMode==="so"&&selA.size>0&&!on);b.classList.toggle("hid",fMode==="sem"&&on);
+  b.setAttribute("aria-pressed",on)});
+ $("#clr").hidden=!selA.size;
+ if(!first){G&&G.filter();if(location.hash.slice(1)==="indice")showIndex()}
 }
 function updateProg(){$("#prog").textContent=`${visited.size} de ${N.length} notas abertas`}
 const dotHTML=c=>`<span class="dot" style="--c:${c}"></span>`;
@@ -234,12 +286,26 @@ function open(id){
    ${n.s&&n.s.length?`<h2>Fontes no seu Drive</h2><ul class="src">${n.s.map(([t,u])=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${extIcon}${esc(t)}</a></li>`).join("")}</ul>`:""}
    ${n.m?`<div id="mats"><h2>Materiais no Drive</h2><p class="fallback" style="padding:0">Carregando…</p></div>`:""}
   </div>`;
+ qaify($("#note .body"));
  $("#note").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{location.hash=b.dataset.go});
  if(n.m)loadMaterials().then(M=>{if(cur===id)renderMats(n,M)});
  const r=$("#reader");
  if(isMobile()){if(window.__fromLink)r.scrollIntoView({block:"start"})}else r.scrollTop=0;
  window.__fromLink=false;
  G&&G.select(id);$("#peek").classList.remove("on");
+}
+function qaify(root){
+ if(!root)return;const hs=[...root.querySelectorAll("h2")];
+ const qh=hs.find(h=>/^perguntas? para se testar/i.test(h.textContent.trim())),ah=hs.find(h=>/^respostas?$/i.test(h.textContent.trim()));
+ if(!qh||!ah)return;
+ const grab=h=>{const out=[];let e=h.nextElementSibling;while(e&&e.tagName!=="H2"){out.push(e);e=e.nextElementSibling}return out};
+ const qn=grab(qh),an=grab(ah);
+ const qs=qn.length===1&&/^[UO]L$/.test(qn[0].tagName)?[...qn[0].children].map(li=>li.innerHTML):[qn.map(x=>x.outerHTML).join("")];
+ let as=an.length===1&&/^[UO]L$/.test(an[0].tagName)?[...an[0].children].map(li=>li.innerHTML):[an.map(x=>x.outerHTML).join("")];
+ if(as.length!==qs.length)as=qs.length===1?[an.map(x=>x.outerHTML).join("")]:as;
+ const box=document.createElement("div");box.className="qa";
+ box.innerHTML=qs.map((q,i)=>`<div class="qi"><p class="q">${q}</p>${as[i]?`<details><summary>Ver resposta</summary><div class="a">${as[i]}</div></details>`:""}</div>`).join("");
+ qn.forEach(x=>x.remove());an.forEach(x=>x.remove());ah.remove();qh.after(box);
 }
 function renderMats(n,M){
  const box=$("#mats");if(!box)return;
@@ -258,14 +324,19 @@ function renderMats(n,M){
 function showIndex(){
  cur=null;G&&G.select(null);document.title="Índice · Cérebro médico";
  const L=(f)=>N.filter(f).sort((a,b)=>a.t.localeCompare(b.t,"pt")).map(n=>`<li><a href="#${n.id}" class="${visited.has(n.id)?"seen":""}">${esc(n.t)}</a></li>`).join("");
- let html=`<h3>${dotHTML(COL["Raciocínio clínico"])}Raciocínio clínico</h3><ul>${L(n=>n.k==="raciocinio")}</ul>`;
+ let html=areaOK("Raciocínio clínico")?`<h3>${dotHTML(COL["Raciocínio clínico"])}Raciocínio clínico</h3><ul>${L(n=>n.k==="raciocinio")}</ul>`:"";
  for(let p=1;p<=maxSeen;p++){
+  if(perF&&p!==perF)continue;
   const maps=N.filter(n=>n.k==="mapa"&&n.p&&n.p[0]===p).sort((a,b)=>a.t.localeCompare(b.t,"pt"));
-  html+=`<h3><a href="#${byId["inicio"]&&N.find(n=>n.k==="periodo"&&n.p[0]===p)?.id||""}">${ordP(p)}</a></h3>`;
-  maps.forEach(m=>{const items=N.filter(n=>n.k==="conceito"&&n.p&&n.p[0]===p&&n.d===m.d);
-   html+=`<h4><a href="#${m.id}">${esc(m.t)}</a></h4>${items.length?`<ul>${items.sort((a,b)=>a.t.localeCompare(b.t,"pt")).map(n=>`<li><a href="#${n.id}" class="${visited.has(n.id)?"seen":""}">${esc(n.t)}</a></li>`).join("")}</ul>`:""}`});
+  let ph="";
+  maps.forEach(m=>{const items=N.filter(n=>n.k==="conceito"&&n.p&&n.p[0]===p&&n.d===m.d&&areaOK(n.a));
+   if(!areaOK(m.a)&&!items.length)return;
+   ph+=`<h4><a href="#${m.id}">${esc(m.t)}</a></h4>${items.length?`<ul>${items.sort((a,b)=>a.t.localeCompare(b.t,"pt")).map(n=>`<li><a href="#${n.id}" class="${visited.has(n.id)?"seen":""}">${esc(n.t)}</a></li>`).join("")}</ul>`:""}`});
+  if(ph||!selA.size)html+=`<h3><a href="#${N.find(n=>n.k==="periodo"&&n.p[0]===p)?.id||""}">${ordP(p)}</a></h3>`+ph;
  }
- $("#note").innerHTML=`<div class="topnav"><button data-go="inicio">Início</button></div><div class="crumbs"><span>${N.length} notas · ${visited.size} já abertas</span></div><h1>Índice</h1><div class="idx">${html}</div>`;
+ const fdesc=[selA.size?(fMode==="so"?"só ":"sem ")+[...selA].join(", "):"",perF?ordP(perF):""].filter(Boolean).join(" · ");
+ $("#note").innerHTML=`<div class="topnav"><button data-go="inicio">Início</button></div><div class="crumbs"><span>${N.length} notas · ${visited.size} já abertas</span></div><h1>Índice</h1>${fdesc?`<p class="lead">Filtro ativo: ${esc(fdesc)}. <button class="linkbtn" id="idxclr">Ver tudo</button></p>`:""}<div class="idx">${html||'<p class="fallback" style="padding:0">Nenhuma nota com esse filtro.</p>'}</div>`;
+ const ic=$("#idxclr");if(ic)ic.onclick=()=>{selA.clear();perF=0;$("#pers").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.p==="0"));applyAreas()};
  $("#note").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{location.hash=b.dataset.go});
  $("#reader").scrollTop=0;
 }
@@ -362,7 +433,7 @@ function buildGraph(){
  const zoom=d3.zoom().scaleExtent([.12,4]).on("zoom",e=>{g.attr("transform",e.transform);k=e.transform.k;labels()});
  svg.call(zoom).on("dblclick.zoom",null);
  const hint=()=>{$("#legend").style.opacity=0};svg.on("pointerdown.hint",hint);
- const vis=o=>!hiddenA.has(o.n.a)&&(!perF||o.n.k==="inicio"||o.n.k==="raciocinio"||(o.n.p||[]).includes(perF));
+ const vis=o=>areaOK(o.n.a)&&(!perF||o.n.k==="inicio"||o.n.k==="raciocinio"||(o.n.p||[]).includes(perF));
  function box(xs,pad){return[d3.min(xs,o=>o.x)-pad[0],d3.max(xs,o=>o.x)+pad[0],d3.min(xs,o=>o.y)-pad[1],d3.max(xs,o=>o.y)+pad[1]]}
  function zoomTo([x0,x1,y0,y1],maxS=1.6,dur=0){let s=Math.min(W()/(x1-x0),H()/(y1-y0),maxS);s=Math.max(s,.12);
   const t=d3.zoomIdentity.translate(W()/2-s*(x0+x1)/2,H()/2-s*(y0+y1)/2).scale(s);(dur?svg.transition().duration(dur):svg).call(zoom.transform,t)}
@@ -370,7 +441,7 @@ function buildGraph(){
   if(mode==="periodo"){const pmax=perF||Math.min(MAXP,maxSeen+1),pmin=perF||1;zoomTo([laneX(pmin)-LW/2-10,laneX(pmax)+LW/2+10,top-240,bottom+20],1.4,dur)}
   else zoomTo(box(xs,[110,60]),1.4,dur)}
  function labels(){const mob=isMobile(),z=Math.max(k,.05);
-  regions.style("font-size",Math.min(16/z,60)+"px").style("display",mode==="area"?null:"none");
+  regions.style("font-size",Math.min(16/z,60)+"px").style("display",a=>mode==="area"&&areaOK(a)?null:"none");
   lanesG.style("display",mode==="periodo"?null:"none");
   lanesG.selectAll("text.t").style("font-size",Math.min(14/z,48)+"px");lanesG.selectAll("text.sub").style("font-size",Math.min(12/z,40)+"px");
   V.select("text").style("font-size",d=>((BIG.includes(d.n.k)?12.5:d.n.k==="mapa"?12:11.5)/z)+"px").style("stroke-width",(3.5/z)+"px").attr("dy",d=>-d.r-5/z)
