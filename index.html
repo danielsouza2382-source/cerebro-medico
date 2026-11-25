@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cérebro médico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calmo e clínico, um caderno de estudo que pensa junto.
+   IDEA: um atlas de conexões: regiões coloridas por área, ou faixas por período como a grade do curso.
+   PICTURE: o próprio grafo; na visão por período, as faixas do 1º ao 12º mostram o básico alimentando o clínico.
+   COLOUR and TYPE: fundo branco (noite: grafite), uma cor por grande área; Plex Sans na interface, Source Serif na leitura.
+   LAYOUT: mapa à esquerda e leitor à direita; no celular, mapa em cima, leitor embaixo. */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0f1317);--ink:light-dark(#16191d,#e7e9ec);--mute:light-dark(#5a626d,#9ba4af);--line:light-dark(#e5e7ea,#242b32);--panel:light-dark(#f5f6f7,#151a20);--lane:light-dark(#f6f7f9,#141920);--edge:light-dark(rgba(30,40,55,.13),rgba(210,220,230,.1));--hl:light-dark(#fff6d6,#3a3420);--acc:#2f6fde}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip}
+a{color:inherit}button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.app{display:grid;grid-template-rows:auto auto minmax(0,1fr);height:100dvh}
+header{display:flex;align-items:center;gap:16px;padding:12px max(2vw,16px);border-bottom:1px solid var(--line)}
+.brand{display:flex;flex-direction:column;line-height:1.15;margin-right:auto}
+.brand b{font-size:19px;font-weight:600;letter-spacing:-.01em}
+.brand span{font-size:13px;color:var(--mute)}
+.search{position:relative;width:min(440px,44vw)}
+.search input{width:100%;height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:0 14px 0 38px;font-size:16px}
+.search>svg{position:absolute;left:12px;top:13px;width:18px;height:18px;stroke:var(--mute)}
+.results{position:absolute;top:50px;left:0;right:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.14);z-index:30;max-height:64vh;overflow:auto;display:none}
+.results.on{display:block}
+.results .grp{font-size:12.5px;color:var(--mute);padding:8px 12px 4px}
+.results button,.results a{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:none;border:0;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line);text-decoration:none}
+.results button:hover,.results .act,.results a:hover{background:var(--panel)}
+.results small{display:block;color:var(--mute);font-size:13px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none;margin-top:6px}
+.prog{font-size:13px;color:var(--mute);white-space:nowrap}
+.bar{display:flex;gap:10px;align-items:center;padding:8px max(2vw,16px);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.seg{display:flex;flex:none;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{height:34px;padding:0 12px;border:0;background:var(--bg);cursor:pointer;font-size:14px;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.sep{width:1px;height:24px;background:var(--line);flex:none}
+.chip{flex:none;display:flex;align-items:center;gap:7px;height:34px;padding:0 11px;border-radius:17px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:13.5px;white-space:nowrap}
+.chip .dot{margin:0}
+.chip[aria-pressed=false]{opacity:.42}
+.chip[aria-pressed=false] .dot{background:transparent;box-shadow:inset 0 0 0 2px var(--c)}
+.chip.ghost{border-style:dashed;color:var(--mute)}
+main{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);min-height:0}
+.map{position:relative;min-height:0;background:radial-gradient(circle at 1px 1px,var(--line) 1px,transparent 1.5px) 0 0/22px 22px}
+.map svg{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+.ctl{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.ctl button{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:20px;line-height:1}
+.legend{position:absolute;left:12px;top:10px;font-size:12.5px;color:var(--mute);background:color-mix(in srgb,var(--bg) 85%,transparent);padding:6px 10px;border-radius:8px;max-width:70%;transition:opacity .4s;pointer-events:none}
+.node circle.core{stroke:var(--bg);stroke-width:1.5px;cursor:pointer}
+.node circle.ring{fill:none;stroke:none}
+.node.vis circle.ring{stroke:var(--ink);stroke-width:1.2px;opacity:.4}
+.node.sel circle.ring{stroke:var(--c);stroke-width:2.5px;opacity:1}
+.node.new circle.core{stroke:#f5b400;stroke-width:3px}
+.node text{font-family:"IBM Plex Sans",sans-serif;font-weight:500;fill:var(--ink);paint-order:stroke;stroke:var(--bg);stroke-linejoin:round;pointer-events:none}
+.node.big text{font-weight:600}
+.region{font-family:"IBM Plex Sans",sans-serif;font-weight:600;fill:var(--c);opacity:.28;pointer-events:none;text-anchor:middle}
+.lane rect{fill:var(--lane);stroke:var(--line)}
+.lane.future rect{fill:none;stroke-dasharray:6 6}
+.lane text{font-family:"IBM Plex Sans",sans-serif;fill:var(--mute);text-anchor:middle;font-weight:600}
+.lane text.sub{font-weight:400}
+.edge{stroke:var(--edge);stroke-width:1px}
+.edge.on{stroke:var(--c);stroke-width:1.8px;opacity:.85}
+.fade{opacity:.1}
+.reader{overflow:auto;border-left:1px solid var(--line)}
+article{max-width:680px;margin:0 auto;padding:26px clamp(18px,3vw,40px) 64px}
+.crumbs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:12px;background:color-mix(in srgb,var(--c) 14%,transparent);color:color-mix(in srgb,var(--c) 78%,var(--ink));font-weight:500}
+.pill .dot{margin:0;width:8px;height:8px}
+article h1{font:600 clamp(27px,3.3vw,38px)/1.08 "Source Serif 4",Georgia,serif;letter-spacing:-.01em;margin:12px 0 10px;text-wrap:balance}
+.lead{font-size:17px;color:var(--mute);margin:0 0 18px}
+.body{font:16.5px/1.62 "Source Serif 4",Georgia,serif}
+.body h2,.side h2{font:600 13px/1.3 "IBM Plex Sans",sans-serif;color:var(--mute);margin:28px 0 8px;padding-top:14px;border-top:1px solid var(--line)}
+.body ul,.body ol{padding-left:1.2em;margin:.4em 0}.body li{margin:.25em 0}
+.body blockquote{margin:0 0 8px;padding:12px 16px;border-radius:10px;background:var(--hl)}
+.body blockquote p{margin:0}
+.body table{width:100%;border-collapse:collapse;font:14px/1.4 "IBM Plex Sans",sans-serif;margin:10px 0}
+.body th,.body td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+.body th{color:var(--mute);font-weight:500}
+.tbl{overflow-x:auto}
+a.wl{color:color-mix(in srgb,var(--c) 85%,var(--ink));text-decoration:none;border-bottom:1.5px solid color-mix(in srgb,var(--c) 45%,transparent);font-weight:600}
+a.wl:hover{background:color-mix(in srgb,var(--c) 12%,transparent)}
+.links{display:flex;flex-wrap:wrap;gap:8px}
+.links a{display:inline-flex;align-items:center;gap:7px;padding:6px 11px;border:1px solid var(--line);border-radius:16px;text-decoration:none;font-size:14px}
+.links .dot{margin:0;width:8px;height:8px}
+.src{list-style:none;padding:0;margin:0}
+.src li{border-bottom:1px solid var(--line)}
+.src a{display:flex;gap:10px;align-items:center;padding:9px 2px;text-decoration:none;font-size:14.5px}
+.src a:hover{color:var(--acc)}
+.src svg{flex:none;width:16px;height:16px;stroke:var(--mute)}
+.src small{color:var(--mute);margin-left:auto;white-space:nowrap;font-size:12.5px}
+.mats details{border-bottom:1px solid var(--line)}
+.mats summary{cursor:pointer;padding:10px 2px;font-weight:500;font-size:14.5px;display:flex;justify-content:space-between;gap:10px}
+.mats summary span{color:var(--mute);font-weight:400}
+.mfilter{width:100%;height:40px;border:1px solid var(--line);border-radius:9px;background:var(--panel);padding:0 12px;font-size:16px;margin:4px 0 8px}
+.news{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 18px;background:var(--panel)}
+.news b{font-size:14px}.news ul{margin:6px 0 0;padding-left:1.1em;font-size:14px}
+.idx h3{display:flex;align-items:center;gap:8px;font:600 15px "IBM Plex Sans",sans-serif;margin:22px 0 6px}
+.idx h4{font:500 13px "IBM Plex Sans",sans-serif;color:var(--mute);margin:12px 0 4px}
+.idx ul{list-style:none;padding:0;margin:0;columns:2 220px;column-gap:24px}
+.idx li{break-inside:avoid;padding:4px 0}
+.idx a{text-decoration:none}.idx a:hover{text-decoration:underline}
+.idx .seen::after{content:" ✓";color:var(--mute);font-size:12px}
+.topnav{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.topnav button{height:36px;padding:0 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);cursor:pointer;font-size:14px}
+.peek{display:none}
+.fallback{padding:20px;color:var(--mute)}
+@media(max-width:900px){
+ .app{display:block;height:auto}
+ header{flex-wrap:wrap;gap:10px}
+ .search{order:3;width:100%}
+ main{display:block}
+ .map{height:60vh;min-height:380px;border-bottom:1px solid var(--line)}
+ .reader{border-left:0;overflow:visible}
+ .peek{position:absolute;left:10px;right:66px;bottom:10px;z-index:6;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+ .peek.on{display:block}
+ .peek b{display:block;font-size:15px}
+ .peek p{margin:2px 0 8px;font-size:13.5px;color:var(--mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+ .peek button{height:38px;padding:0 14px;border-radius:9px;border:0;background:var(--ink);color:var(--bg);font-weight:500;cursor:pointer}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+ <header>
+  <div class="brand"><b>Cérebro médico</b><span>Medicina UFF · todos os períodos</span></div>
+  <div class="search" role="search">
+   <svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+   <input id="q" type="search" placeholder="Buscar conceito, fármaco, exame, arquivo…" autocomplete="off" aria-label="Buscar">
+   <div class="results" id="res"></div>
+  </div>
+  <div class="prog" id="prog"></div>
+ </header>
+ <nav class="bar" aria-label="Visão e filtros">
+  <div class="seg" id="mode"><button data-m="area" aria-pressed="true">Por área</button><button data-m="periodo" aria-pressed="false">Por período</button></div>
+  <div class="seg" id="pers"></div>
+  <span class="sep"></span>
+  <div id="chips" style="display:flex;gap:8px"></div>
+ </nav>
+ <main>
+  <section class="map" id="map" aria-label="Mapa de conexões">
+   <svg id="svg" role="img" aria-label="Grafo das notas e suas ligações"></svg>
+   <div class="ctl"><button id="zin" aria-label="Aproximar">+</button><button id="zout" aria-label="Afastar">−</button><button id="zfit" aria-label="Ver mapa inteiro">⤢</button></div>
+   <div class="legend" id="legend">Toque num ponto para abrir a nota. Arraste e aproxime para explorar.</div>
+   <div class="peek" id="peek"><b id="pk-t"></b><p id="pk-r"></p><button id="pk-go">Ler nota</button></div>
+  </section>
+  <section class="reader" id="reader"><article id="note"><p class="fallback">Carregando o mapa…</p></article></section>
+ </main>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm=s=>String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+const KIND={inicio:"início",periodo:"período",mapa:"mapa da disciplina",raciocinio:"raciocínio clínico",conceito:"conceito"};
+const BIG=["inicio","periodo","raciocinio"];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const isMobile=()=>matchMedia("(max-width:900px)").matches;
+let N=[],byId={},COL={},AREAS=[],MAXP=12,maxSeen=5,manifest={},news=[],newIds=new Set();
+let MAT=null,matPromise=null,updatesData=[];
+let visited=new Set(store.get("cm-visited",store.get("cm5p-visited",[]))),hiddenA=new Set(),perF=0,mode=store.get("cm-mode","area"),cur=null,G=null;
+const ordP=p=>`${p}º período`;
+
+async function getJSON(u){const r=await fetch(u,{cache:"no-cache"});if(!r.ok)throw new Error(u);return r.json()}
+async function boot(){
+ manifest=await getJSON("data/manifest.json");
+ const base=await getJSON(manifest.notes[0]);
+ AREAS=base.areas;AREAS.forEach(a=>COL[a.n]=a.c);MAXP=base.maxPeriod||12;
+ N=base.notes;
+ for(const u of manifest.updates||[]){
+  try{const d=await getJSON(u.f);updatesData.push(d);news.push(u);
+   (d.notes||[]).forEach(n=>{const i=N.findIndex(x=>x.id===n.id);if(i>=0)N[i]=n;else N.push(n);newIds.add(n.id)});
+   (d.areas||[]).forEach(a=>{if(!COL[a.n]){AREAS.push(a);COL[a.n]=a.c}});
+   Object.entries(d.patch||{}).forEach(([id,p])=>{const n=N.find(x=>x.id===id);if(!n)return;
+    (p.l||[]).forEach(x=>{if(!n.l.includes(x))n.l.push(x)});(p.s||[]).forEach(x=>n.s.push(x));(p.m||[]).forEach(x=>{n.m=n.m||[];if(!n.m.includes(x))n.m.push(x)})});
+  }catch(e){}
+ }
+ N.forEach(n=>{n.b=[];byId[n.id]=n});
+ N.forEach(n=>{n.l=n.l.filter(x=>byId[x]);n.l.forEach(t=>{if(!byId[t].b.includes(n.id))byId[t].b.push(n.id)})});
+ N.forEach(n=>{n.plain=norm(n.t+" "+n.g.join(" ")+" "+n.r+" "+n.h.replace(/<[^>]+>/g," "))});
+ maxSeen=Math.max(5,...N.flatMap(n=>n.p||[]));
+ buildBar();updateProg();
+ try{G=buildGraph()}catch(e){console.error(e);$("#map").innerHTML='<p class="fallback">Não foi possível desenhar o mapa aqui. Use o índice.</p>'}
+ route();addEventListener("hashchange",route);
+}
+boot().catch(()=>{$("#note").innerHTML='<p class="fallback">Não foi possível carregar as notas.</p>'});
+
+function loadMaterials(){
+ if(matPromise)return matPromise;
+ matPromise=Promise.all((manifest.materials||[]).map(getJSON)).then(L=>{
+  MAT={folders:{},items:[]};
+  [...L,...updatesData.map(d=>d.materials).filter(Boolean)].forEach(m=>{Object.assign(MAT.folders,m.folders||{});
+   (m.items||[]).forEach(it=>{if(!MAT.items.some(x=>x[2]===it[2]))MAT.items.push(it)})});
+  MAT.items.forEach(it=>it.n=norm(it[1]+" "+it[3]));return MAT}).catch(()=>({folders:{},items:[]}));
+ return matPromise;
+}
+
+function route(){const h=decodeURIComponent(location.hash.slice(1));if(h==="indice"){showIndex();return}open(byId[h]?h:"inicio")}
+
+function buildBar(){
+ $("#mode").querySelectorAll("button").forEach(b=>{b.setAttribute("aria-pressed",b.dataset.m===mode);b.onclick=()=>{mode=b.dataset.m;store.set("cm-mode",mode);$("#mode").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));G&&G.setMode(mode)}});
+ let ph=`<button data-p="0" aria-pressed="true">Todos</button>`;for(let p=1;p<=maxSeen;p++)ph+=`<button data-p="${p}" aria-pressed="false">${p}º</button>`;
+ $("#pers").innerHTML=ph;
+ $("#pers").onclick=e=>{const b=e.target.closest("button");if(!b)return;perF=+b.dataset.p;$("#pers").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));G&&G.filter()};
+ $("#chips").innerHTML=AREAS.filter(a=>a.n!=="Início").map(a=>`<button class="chip" aria-pressed="true" data-a="${esc(a.n)}" style="--c:${a.c}"><span class="dot"></span>${esc(a.n)}</button>`).join("")+`<button class="chip ghost" id="idxbtn">Índice</button>`;
+ $("#chips").onclick=e=>{const b=e.target.closest("button");if(!b)return;if(b.id==="idxbtn"){location.hash="indice";return}
+  const a=b.dataset.a,on=b.getAttribute("aria-pressed")==="true";b.setAttribute("aria-pressed",on?"false":"true");on?hiddenA.add(a):hiddenA.delete(a);G&&G.filter()};
+}
+function updateProg(){$("#prog").textContent=`${visited.size} de ${N.length} notas abertas`}
+const dotHTML=c=>`<span class="dot" style="--c:${c}"></span>`;
+const extIcon='<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>';
+
+function open(id){
+ const n=byId[id];if(!n)return;cur=id;
+ visited.add(id);store.set("cm-visited",[...visited]);updateProg();
+ const c=COL[n.a]||"#888",fwd=new Set(n.l),rel=n.b.filter(x=>x!=="inicio"&&!fwd.has(x)).map(x=>byId[x]);
+ document.title=`${n.t} · Cérebro médico`;
+ const per=(n.p||[]).length?` · ${n.p.map(p=>p+"º").join(", ")} período`:"";
+ let newsHTML="";
+ if(id==="inicio"&&news.length){newsHTML=`<div class="news"><b>Novidades do Drive</b><ul>${news.slice(-5).reverse().map(u=>`<li>${esc(u.d)}: ${esc(u.s)}</li>`).join("")}</ul></div>`}
+ $("#note").innerHTML=`
+  <div class="topnav">${id!=="inicio"?'<button data-go="inicio">Início</button>':''}<button data-go="indice">Índice</button></div>
+  <div class="crumbs"><span class="pill" style="--c:${c}">${dotHTML(c)}${esc(n.a)}</span><span>${esc(n.k==="conceito"||n.k==="mapa"?n.d:KIND[n.k]||n.k)}${esc(per)}</span></div>
+  <h1>${esc(n.t)}</h1>${n.r?`<p class="lead">${esc(n.r)}</p>`:""}${newsHTML}
+  <div class="body">${n.h.replace(/<table>/g,'<div class="tbl"><table>').replace(/<\/table>/g,"</table></div>")}</div>
+  <div class="side">
+   ${rel.length?`<h2>Também aparece em</h2><div class="links">${rel.map(x=>`<a href="#${x.id}">${dotHTML(COL[x.a])}${esc(x.t)}</a>`).join("")}</div>`:""}
+   ${n.s&&n.s.length?`<h2>Fontes no seu Drive</h2><ul class="src">${n.s.map(([t,u])=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${extIcon}${esc(t)}</a></li>`).join("")}</ul>`:""}
+   ${n.m?`<div id="mats"><h2>Materiais no Drive</h2><p class="fallback" style="padding:0">Carregando…</p></div>`:""}
+  </div>`;
+ $("#note").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{location.hash=b.dataset.go});
+ if(n.m)loadMaterials().then(M=>{if(cur===id)renderMats(n,M)});
+ const r=$("#reader");
+ if(isMobile()){if(window.__fromLink)r.scrollIntoView({block:"start"})}else r.scrollTop=0;
+ window.__fromLink=false;
+ G&&G.select(id);$("#peek").classList.remove("on");
+}
+function renderMats(n,M){
+ const box=$("#mats");if(!box)return;
+ const items=M.items.filter(it=>n.m.includes(it[0]));
+ if(!items.length){box.innerHTML="";return}
+ const groups=new Map();
+ items.forEach(it=>{const f=M.folders[it[0]]||{label:it[0]};const k=(n.m.length>1?f.label+(it[3]?" / ":""):"")+(it[3]||(n.m.length>1?"":"Pasta principal"));if(!groups.has(k))groups.set(k,[]);groups.get(k).push(it)});
+ const draw=v=>{const nv=norm(v.trim());let html="";
+  for(const [k,L] of groups){const F=nv?L.filter(it=>it.n.includes(nv)):L;if(!F.length)continue;
+   html+=`<details ${nv||groups.size<=3?"open":""}><summary>${esc(k||"Pasta principal")}<span>${F.length}</span></summary><ul class="src">${F.map(it=>`<li><a href="${esc(it[2])}" target="_blank" rel="noopener">${extIcon}${esc(it[1])}${it[4]?`<small>${esc(it[4].split("-").reverse().join("/"))}</small>`:""}</a></li>`).join("")}</ul></details>`}
+  box.querySelector(".mats").innerHTML=html||'<p class="fallback" style="padding:8px 0">Nada com esse nome.</p>'};
+ box.innerHTML=`<h2>Materiais no Drive (${items.length})</h2>${items.length>12?'<input class="mfilter" placeholder="Filtrar materiais…" aria-label="Filtrar materiais">':""}<div class="mats"></div>`;
+ const inp=box.querySelector(".mfilter");if(inp)inp.oninput=()=>draw(inp.value);draw("");
+}
+
+function showIndex(){
+ cur=null;G&&G.select(null);document.title="Índice · Cérebro médico";
+ const L=(f)=>N.filter(f).sort((a,b)=>a.t.localeCompare(b.t,"pt")).map(n=>`<li><a href="#${n.id}" class="${visited.has(n.id)?"seen":""}">${esc(n.t)}</a></li>`).join("");
+ let html=`<h3>${dotHTML(COL["Raciocínio clínico"])}Raciocínio clínico</h3><ul>${L(n=>n.k==="raciocinio")}</ul>`;
+ for(let p=1;p<=maxSeen;p++){
+  const maps=N.filter(n=>n.k==="mapa"&&n.p&&n.p[0]===p).sort((a,b)=>a.t.localeCompare(b.t,"pt"));
+  html+=`<h3><a href="#${byId["inicio"]&&N.find(n=>n.k==="periodo"&&n.p[0]===p)?.id||""}">${ordP(p)}</a></h3>`;
+  maps.forEach(m=>{const items=N.filter(n=>n.k==="conceito"&&n.p&&n.p[0]===p&&n.d===m.d);
+   html+=`<h4><a href="#${m.id}">${esc(m.t)}</a></h4>${items.length?`<ul>${items.sort((a,b)=>a.t.localeCompare(b.t,"pt")).map(n=>`<li><a href="#${n.id}" class="${visited.has(n.id)?"seen":""}">${esc(n.t)}</a></li>`).join("")}</ul>`:""}`});
+ }
+ $("#note").innerHTML=`<div class="topnav"><button data-go="inicio">Início</button></div><div class="crumbs"><span>${N.length} notas · ${visited.size} já abertas</span></div><h1>Índice</h1><div class="idx">${html}</div>`;
+ $("#note").querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{location.hash=b.dataset.go});
+ $("#reader").scrollTop=0;
+}
+$("#reader").addEventListener("click",e=>{if(e.target.closest("a[href^='#']"))window.__fromLink=true});
+
+/* ---------- busca ---------- */
+const q=$("#q"),res=$("#res");let hits=[],mhits=[],act=0;
+q.addEventListener("focus",()=>loadMaterials());
+q.addEventListener("input",async()=>{
+ const v=norm(q.value.trim());if(v.length<2){res.classList.remove("on");return}
+ const terms=v.split(/\s+/);
+ hits=N.map(n=>{const t=norm(n.t);let s=0;for(const w of terms){if(t.includes(w))s+=t.startsWith(w)?12:8;else if(n.g.some(g=>norm(g).includes(w)))s+=4;else if(n.plain.includes(w))s+=Math.min(n.plain.split(w).length-1,6)*.6;else return null}
+  if(n.k!=="conceito"&&n.k!=="raciocinio")s-=.5;return{n,s}}).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,8);
+ const M=MAT||await loadMaterials();mhits=M.items.filter(it=>terms.every(w=>it.n.includes(w))).slice(0,6);
+ act=0;renderHits();
+});
+function renderHits(){
+ let h=hits.length?`<div class="grp">Notas</div>`+hits.map((x,i)=>`<button class="${i===act?"act":""}" data-id="${x.n.id}">${dotHTML(COL[x.n.a])}<span><b>${esc(x.n.t)}</b><small>${esc(x.n.d)}</small></span></button>`).join(""):"";
+ if(mhits.length)h+=`<div class="grp">Arquivos no Drive</div>`+mhits.map(it=>`<a href="${esc(it[2])}" target="_blank" rel="noopener">${extIcon.replace("<svg",'<svg style="width:16px;height:16px;flex:none;margin-top:3px;stroke:var(--mute)"')}<span><b>${esc(it[1])}</b><small>${esc((MAT.folders[it[0]]||{}).label||"")}</small></span></a>`).join("");
+ res.innerHTML=h||'<div class="grp">Nada encontrado</div>';res.classList.add("on");
+}
+q.addEventListener("keydown",e=>{if(!res.classList.contains("on"))return;
+ if(e.key==="ArrowDown"){act=Math.min(act+1,hits.length-1);renderHits();e.preventDefault()}
+ else if(e.key==="ArrowUp"){act=Math.max(act-1,0);renderHits();e.preventDefault()}
+ else if(e.key==="Enter"&&hits[act])go(hits[act].n.id);else if(e.key==="Escape")res.classList.remove("on")});
+res.addEventListener("click",e=>{const b=e.target.closest("button[data-id]");if(b)go(b.dataset.id)});
+function go(id){res.classList.remove("on");q.value="";q.blur();window.__fromLink=true;location.hash=id}
+document.addEventListener("click",e=>{if(!e.target.closest(".search"))res.classList.remove("on")});
+document.addEventListener("keydown",e=>{if(e.key==="/"&&document.activeElement!==q){e.preventDefault();q.focus()}});
+
+/* ---------- grafo ---------- */
+function buildGraph(){
+ if(!window.d3)throw new Error("d3");
+ const svg=d3.select("#svg"),W=()=>svg.node().clientWidth||800,H=()=>svg.node().clientHeight||600;
+ const nodes=N.map(n=>({id:n.id,n})),idx={};nodes.forEach(o=>idx[o.id]=o);
+ const seen=new Set(),links=[];
+ N.forEach(n=>n.l.forEach(t=>{const k=[n.id,t].sort().join("|");if(!seen.has(k)){seen.add(k);links.push({s:n.id,t})}}));
+ const deg={},nb={};nodes.forEach(o=>{deg[o.id]=0;nb[o.id]=new Set([o.id])});
+ links.forEach(l=>{deg[l.s]++;deg[l.t]++;nb[l.s].add(l.t);nb[l.t].add(l.s)});
+ nodes.forEach(o=>{const k=o.n.k;o.r=k==="inicio"?16:k==="periodo"?12:k==="raciocinio"?10:k==="mapa"?8:4+Math.sqrt(deg[o.id]||1)*1.3});
+ const fp=o=>o.n.p&&o.n.p.length?Math.min(...o.n.p):0;
+ /* layout por área */
+ const areas=AREAS.map(a=>a.n).filter(a=>a!=="Início"&&a!=="Raciocínio clínico"),asp=W()/H(),fx=Math.min(1.25,Math.max(.62,asp)),fy=Math.min(1.1,Math.max(.72,1/asp)),R=760,anc={};
+ areas.forEach((a,i)=>{const t=-Math.PI/2+i*2*Math.PI/areas.length;anc[a]=[Math.cos(t)*R*fx,Math.sin(t)*R*fy]});anc["Início"]=[0,0];anc["Raciocínio clínico"]=[0,0];
+ const pAnc=o=>{const p=o.n.p[0]||1,t=Math.PI/2+(p-1)*2*Math.PI/Math.max(5,maxSeen);return[Math.cos(t)*250*fx,Math.sin(t)*250*fy]};
+ const ax0=o=>o.n.k==="periodo"?pAnc(o)[0]:(anc[o.n.a]||[0])[0],ay0=o=>o.n.k==="periodo"?pAnc(o)[1]:(anc[o.n.a]||[0,0])[1];
+ const L1=links.map(l=>({source:l.s,target:l.t})),rnd=d3.randomLcg(.4242);
+ const A=nodes.map(o=>({id:o.id,n:o.n,r:o.r,x:ax0(o)+(rnd()-.5)*90,y:ay0(o)+(rnd()-.5)*90}));
+ const s1=d3.forceSimulation(A).randomSource(d3.randomLcg(.17))
+  .force("link",d3.forceLink(L1).id(d=>d.id).distance(l=>l.source.n.a===l.target.n.a?50:160).strength(l=>l.source.n.a===l.target.n.a?.35:.02))
+  .force("charge",d3.forceManyBody().strength(-170))
+  .force("collide",d3.forceCollide(d=>d.r+(d.n.k==="raciocinio"?34:BIG.includes(d.n.k)?26:d.n.k==="mapa"?14:7)))
+  .force("x",d3.forceX(d=>ax0(d)).strength(d=>d.n.k==="raciocinio"?.04:d.n.k==="inicio"?.5:d.n.k==="periodo"?.5:.14))
+  .force("y",d3.forceY(d=>ay0(d)).strength(d=>d.n.k==="raciocinio"?.04:d.n.k==="inicio"?.5:d.n.k==="periodo"?.5:.14)).stop();
+ for(let i=0;i<320;i++)s1.tick();
+ /* layout por período */
+ const LW=340,BH=140,AORD=["Morfologia","Fisiologia e bioquímica","Agressão e defesa","Patologia","Farmacologia","Diagnóstico","Semiologia e clínica","Pediatria","Humanidades e saúde coletiva"];
+ const band=a=>{const i=AORD.indexOf(a);return(i<0?AORD.length:i)*BH};
+ const laneX=p=>(p-1)*LW,top=-200,bottom=band("Humanidades e saúde coletiva")+90;
+ const tgtX=o=>{if(o.n.k==="raciocinio")return hubPos[o.id][0];if(o.n.k==="inicio")return laneX(1)-LW/2+30;const p=fp(o);if(p)return laneX(p);const ps=[...nb[o.id]].map(x=>fp(idx[x])).filter(Boolean);return ps.length?laneX(d3.mean(ps)):laneX(1)-LW};
+ const hubs=nodes.filter(o=>o.n.k==="raciocinio").map(o=>({o,m:d3.mean([...nb[o.id]].map(x=>fp(idx[x])).filter(Boolean))||3})).sort((a,b)=>a.m-b.m);
+ const hubPos={};hubs.forEach((h,i)=>{hubPos[h.o.id]=[laneX(1)+(laneX(maxSeen)-laneX(1))*(hubs.length>1?i/(hubs.length-1):.5),top-80-(i%3)*48]});
+ const tgtY=o=>o.n.k==="inicio"?top-200:o.n.k==="raciocinio"?hubPos[o.id][1]:o.n.k==="periodo"?top+40:band(o.n.a)+(o.n.k==="mapa"?-20:15);
+ const P=nodes.map((o,i)=>({id:o.id,n:o.n,r:o.r,x:tgtX(o)+(rnd()-.5)*120,y:tgtY(o)+(rnd()-.5)*40}));
+ const s2=d3.forceSimulation(P).randomSource(d3.randomLcg(.29))
+  .force("link",d3.forceLink(links.map(l=>({source:l.s,target:l.t}))).id(d=>d.id).distance(40).strength(.008))
+  .force("charge",d3.forceManyBody().strength(-45))
+  .force("collide",d3.forceCollide(d=>d.r+(BIG.includes(d.n.k)?18:6)))
+  .force("x",d3.forceX(d=>tgtX(d)).strength(d=>BIG.includes(d.n.k)?1:.2))
+  .force("y",d3.forceY(d=>tgtY(d)).strength(d=>BIG.includes(d.n.k)?1:.3)).stop();
+ for(let i=0;i<300;i++){s2.tick();P.forEach(d=>{const p=fp(d);if(p&&!BIG.includes(d.n.k)){const c=laneX(p);d.x=Math.max(c-LW/2+26,Math.min(c+LW/2-26,d.x))}})}
+ nodes.forEach((o,i)=>{o.ax=A[i].x;o.ay=A[i].y;o.px=P[i].x;o.py=P[i].y;o.x=mode==="periodo"?o.px:o.ax;o.y=mode==="periodo"?o.py:o.ay});
+ const E2=links.map(l=>({s:idx[l.s],t:idx[l.t]}));
+ /* desenho */
+ const g=svg.append("g");
+ const lanesG=g.append("g").attr("class","lanes");
+ const laneData=d3.range(1,MAXP+1).map(p=>({p,future:!N.some(n=>(n.p||[]).includes(p))}));
+ const lanes=lanesG.selectAll("g").data(laneData).join("g").attr("class",d=>"lane"+(d.future?" future":""));
+ lanes.append("rect").attr("x",d=>laneX(d.p)-LW/2+12).attr("y",top-10).attr("width",LW-24).attr("height",bottom-top+30).attr("rx",18);
+ lanes.append("text").attr("class","t").attr("x",d=>laneX(d.p)).attr("y",top-24).text(d=>ordP(d.p));
+ lanes.filter(d=>d.future).append("text").attr("class","sub").attr("x",d=>laneX(d.p)).attr("y",top+30).text("em breve");
+ const regions=g.append("g").selectAll("text").data(areas).join("text").attr("class","region").style("--c",a=>COL[a]).text(a=>a);
+ const placeRegions=()=>regions.each(function(a){const L=nodes.filter(o=>o.n.a===a);if(!L.length)return;d3.select(this).attr("x",d3.mean(L,o=>o.ax)).attr("y",d3.min(L,o=>o.ay)-30)});
+ placeRegions();
+ const E=g.append("g").selectAll("line").data(E2).join("line").attr("class","edge");
+ const V=g.append("g").selectAll("g").data(nodes).join("g").attr("class",d=>"node"+(BIG.includes(d.n.k)?" big":"")+(newIds.has(d.id)?" new":"")).style("--c",d=>COL[d.n.a]);
+ V.append("circle").attr("class","ring").attr("r",d=>d.r+3.5);
+ V.append("circle").attr("class","core").attr("r",d=>d.r).attr("fill",d=>COL[d.n.a]||"#888");
+ V.append("text").attr("text-anchor","middle").text(d=>d.n.t.replace("Raciocínio clínico — ",""));
+ V.append("title").text(d=>d.n.t);
+ const draw=()=>{E.attr("x1",d=>d.s.x).attr("y1",d=>d.s.y).attr("x2",d=>d.t.x).attr("y2",d=>d.t.y);V.attr("transform",d=>`translate(${d.x},${d.y})`)};
+ draw();
+ let k=1,sel=null;
+ const zoom=d3.zoom().scaleExtent([.12,4]).on("zoom",e=>{g.attr("transform",e.transform);k=e.transform.k;labels()});
+ svg.call(zoom).on("dblclick.zoom",null);
+ const hint=()=>{$("#legend").style.opacity=0};svg.on("pointerdown.hint",hint);
+ const vis=o=>!hiddenA.has(o.n.a)&&(!perF||o.n.k==="inicio"||o.n.k==="raciocinio"||(o.n.p||[]).includes(perF));
+ function box(xs,pad){return[d3.min(xs,o=>o.x)-pad[0],d3.max(xs,o=>o.x)+pad[0],d3.min(xs,o=>o.y)-pad[1],d3.max(xs,o=>o.y)+pad[1]]}
+ function zoomTo([x0,x1,y0,y1],maxS=1.6,dur=0){let s=Math.min(W()/(x1-x0),H()/(y1-y0),maxS);s=Math.max(s,.12);
+  const t=d3.zoomIdentity.translate(W()/2-s*(x0+x1)/2,H()/2-s*(y0+y1)/2).scale(s);(dur?svg.transition().duration(dur):svg).call(zoom.transform,t)}
+ function fit(dur=0){const xs=nodes.filter(vis);if(!xs.length)return;
+  if(mode==="periodo"){const pmax=perF||Math.min(MAXP,maxSeen+1),pmin=perF||1;zoomTo([laneX(pmin)-LW/2-10,laneX(pmax)+LW/2+10,top-240,bottom+20],1.4,dur)}
+  else zoomTo(box(xs,[110,60]),1.4,dur)}
+ function labels(){const mob=isMobile(),z=Math.max(k,.05);
+  regions.style("font-size",Math.min(16/z,60)+"px").style("display",mode==="area"?null:"none");
+  lanesG.style("display",mode==="periodo"?null:"none");
+  lanesG.selectAll("text.t").style("font-size",Math.min(14/z,48)+"px");lanesG.selectAll("text.sub").style("font-size",Math.min(12/z,40)+"px");
+  V.select("text").style("font-size",d=>((BIG.includes(d.n.k)?12.5:d.n.k==="mapa"?12:11.5)/z)+"px").style("stroke-width",(3.5/z)+"px").attr("dy",d=>-d.r-5/z)
+   .style("display",d=>{if(!vis(d))return"none";const big=BIG.includes(d.n.k);
+    if(sel)return nb[sel].has(d.id)&&(big||d.n.k==="mapa"||k>.55||d.id===sel)?null:"none";
+    if(d.n.k==="inicio"||(mode==="periodo"&&d.n.k==="periodo"))return"none";
+    if(mob&&big&&k<.6)return"none";
+    return big||(d.n.k==="mapa"&&k>(mob?.75:.55))||(k>(mob?1.9:1.3))?null:"none"})}
+ function paint(){
+  V.classed("vis",d=>visited.has(d.id)).classed("sel",d=>d.id===sel).style("display",d=>vis(d)?null:"none");
+  E.style("display",d=>vis(d.s)&&vis(d.t)?null:"none");
+  if(sel){V.classed("fade",d=>!nb[sel].has(d.id));E.classed("on",d=>d.s.id===sel||d.t.id===sel).classed("fade",d=>!(d.s.id===sel||d.t.id===sel)).style("--c",COL[byId[sel].a])}
+  else{V.classed("fade",false);E.classed("on",false).classed("fade",false)}
+  labels()}
+ function fitTo(set){const xs=nodes.filter(o=>set.has(o.id)&&vis(o));if(xs.length)zoomTo(box(xs,[130,50]),1.7,450)}
+ V.on("click",(e,d)=>{e.stopPropagation();hint();
+  if(isMobile()){sel=d.id;paint();fitTo(nb[d.id]);$("#pk-t").textContent=d.n.t;$("#pk-r").textContent=d.n.r;$("#peek").classList.add("on");
+   $("#pk-go").onclick=()=>{$("#peek").classList.remove("on");window.__fromLink=true;if(cur===d.id)$("#reader").scrollIntoView({block:"start"});else location.hash=d.id}}
+  else location.hash=d.id});
+ V.on("mouseenter",function(e,d){if(!isMobile())d3.select(this).select("text").style("display",null)}).on("mouseleave",()=>labels());
+ svg.on("click",()=>{if(isMobile()){$("#peek").classList.remove("on");sel=cur&&cur!=="inicio"?cur:null;paint()}});
+ V.call(d3.drag().on("start",(e,d)=>{}).on("drag",(e,d)=>{d.x=e.x;d.y=e.y;draw()}));
+ $("#zin").onclick=()=>svg.transition().duration(250).call(zoom.scaleBy,1.4);
+ $("#zout").onclick=()=>svg.transition().duration(250).call(zoom.scaleBy,1/1.4);
+ $("#zfit").onclick=()=>fit(400);
+ let lastW=0;const ro=new ResizeObserver(()=>{const w=W();if(Math.abs(w-lastW)>40){lastW=w;fit()}});ro.observe(svg.node());
+ function setMode(m){const from=nodes.map(o=>[o.x,o.y]),reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const to=nodes.map(o=>m==="periodo"?[o.px,o.py]:[o.ax,o.ay]);labels();
+  if(reduce){nodes.forEach((o,i)=>{[o.x,o.y]=to[i]});draw();fit(0);return}
+  const t0=performance.now(),D=700;const tm=d3.timer(()=>{const u=Math.min(1,(performance.now()-t0)/D),e=d3.easeCubicInOut(u);
+   nodes.forEach((o,i)=>{o.x=from[i][0]+(to[i][0]-from[i][0])*e;o.y=from[i][1]+(to[i][1]-from[i][1])*e});draw();if(u>=1){tm.stop()}});
+  fit(D)}
+ fit();paint();
+ return{select(id){sel=(id&&id!=="inicio")?id:null;paint();if(sel)fitTo(nb[sel]);else fit(400)},filter(){paint();fit(400)},setMode(m){setMode(m);paint()}};
+}
+$("#pk-go").onclick=()=>{$("#peek").classList.remove("on");$("#reader").scrollIntoView({block:"start"})};
+}
+</script>
+</body>
+</html>
