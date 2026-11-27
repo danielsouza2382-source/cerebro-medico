@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cérebro médico</title>
+<meta name="description" content="Mapa de conhecimento da Medicina UFF: notas ligadas entre si, do 1º período em diante.">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1317">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cérebro">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
 <style>
@@ -130,10 +139,42 @@ a.wl:hover{background:color-mix(in srgb,var(--c) 12%,transparent)}
 .topnav button{height:36px;padding:0 12px;border:1px solid var(--line);border-radius:9px;background:var(--bg);cursor:pointer;font-size:14px}
 .peek{display:none}
 .fallback{padding:20px;color:var(--mute)}
+.hacts{display:flex;gap:8px;align-items:center}
+.hbtn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:13.5px;white-space:nowrap}
+.hbtn[hidden]{display:none}
+.hbtn svg{width:16px;height:16px;stroke:currentColor}
+.hbtn .sdot{width:8px;height:8px;border-radius:50%;background:var(--c,var(--mute))}
+.dlg{border:1px solid var(--line);border-radius:16px;padding:0;width:min(460px,calc(100vw - 24px));background:var(--bg);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.dlg::backdrop{background:rgba(10,14,18,.45)}
+.dlg .in{padding:20px 20px 16px}
+.dlg h2{margin:0 0 8px;font-size:19px;font-weight:600;outline:none}
+.dlg p,.dlg li{color:var(--mute);font-size:14.5px}
+.dlg p{margin:0 0 10px}
+.dlg ol{padding-left:1.2em;margin:6px 0}
+.dlg b{color:var(--ink)}
+.dlg label{display:block;font-size:13px;color:var(--mute);margin:10px 0 4px}
+.dlg input{width:100%;box-sizing:border-box;height:40px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:var(--bg)}
+.dlg details{margin:10px 0;font-size:14px}
+.dlg summary{cursor:pointer;color:var(--ink)}
+.dlg .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px}
+.dlg .btn{height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-weight:500;cursor:pointer}
+.dlg .btn.ghost{background:var(--bg);color:var(--ink);border-color:var(--line)}
+.dlg .btn:disabled{opacity:.6}
+.dlg .msg{color:#cf3f7a;min-height:1em}
+.dlg .qr{display:flex;justify-content:center;padding:12px;background:#fff;border-radius:12px;margin:8px 0}
+.dlg .qr svg{width:200px;height:200px}
+.dlg .st{display:inline-flex;align-items:center;gap:7px;color:var(--ink)}
+.dlg .st i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100vw - 32px)}
+.toast.on{opacity:1}
+.cont{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 18px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;font:14px/1.4 "IBM Plex Sans",sans-serif;color:var(--mute)}
+.cont a{color:var(--ink);font-weight:600}
 @media(max-width:900px){
  .app{display:block;height:auto}
  header{flex-wrap:wrap;gap:10px}
  .search{order:3;width:100%}
+ .hacts{order:4;width:100%}
+ .hacts .hbtn{flex:1;justify-content:center}
  .bar{gap:6px}
  .rowwrap{width:100%}
  .row,.row.areas{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px;flex:1 1 100%}
@@ -161,7 +202,10 @@ a.wl:hover{background:color-mix(in srgb,var(--c) 12%,transparent)}
    <div class="results" id="res"></div>
   </div>
   <div class="prog" id="prog"></div>
+  <div class="hacts"><button class="hbtn" id="syncbtn" hidden><span class="sdot"></span><span class="t">Sincronizar</span></button><button class="hbtn" id="instbtn" hidden><svg viewBox="0 0 24 24" fill="none" stroke-width="2" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>Instalar app</button></div>
  </header>
+ <dialog class="dlg" id="dlg"><div class="in" id="dlgc"></div></dialog>
+ <div class="toast" id="toast" role="status"></div>
  <nav class="bar" aria-label="Visão e filtros">
   <div class="rowwrap"><div class="row">
    <div class="seg" id="mode"><button data-m="area" aria-pressed="true">Por área</button><button data-m="periodo" aria-pressed="false">Por período</button></div>
@@ -185,7 +229,7 @@ a.wl:hover{background:color-mix(in srgb,var(--c) 12%,transparent)}
   <section class="reader" id="reader"><article id="note"><p class="fallback">Carregando o mapa…</p></article></section>
  </main>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="vendor/d3.min.js"></script>
 <script>
 {
 const $=s=>document.querySelector(s);
@@ -202,6 +246,8 @@ const ordP=p=>`${p}º período`;
 
 async function getJSON(u){const r=await fetch(u,{cache:"no-cache"});if(!r.ok)throw new Error(u);return r.json()}
 async function boot(){
+ if(location.hash.startsWith("#conectar=")){const code=location.hash.slice(10);history.replaceState(null,"",location.pathname+location.search+"#inicio");
+  connectWith("",code).then(()=>{toast("Aparelho conectado. Sincronizando…");sync()}).catch(e=>syncDialog(e.message))}
  manifest=await getJSON("data/manifest.json");
  const base=await getJSON(manifest.notes[0]);
  AREAS=base.areas;AREAS.forEach(a=>COL[a.n]=a.c);MAXP=base.maxPeriod||12;
@@ -222,7 +268,123 @@ async function boot(){
  try{G=buildGraph()}catch(e){console.error(e);$("#map").innerHTML='<p class="fallback">Não foi possível desenhar o mapa aqui. Use o índice.</p>'}
  route();addEventListener("hashchange",route);
 }
-boot().catch(()=>{$("#note").innerHTML='<p class="fallback">Não foi possível carregar as notas.</p>'});
+/* ---------- app: instalar e sincronizar entre aparelhos ---------- */
+const APP=/(^|\.)github\.io$|^localhost$|^127\.0\.0\.1$/.test(location.hostname);
+const SYNC_FILE="cerebro/progresso.json",CK="cerebro-github-v1",PK="painel-github-v1",DEF_REPO="danielsouza2382-source/painel-dados";
+let lastNote=store.get("cm-last",null),syncS="local",syncing=false,again=false,sT=null,deferredPrompt=null;
+const SL={local:["Só neste aparelho","var(--mute)"],sync:["Sincronizando…","#2f6fde"],ok:["Sincronizado","#2c9a52"],off:["Sem internet","var(--mute)"],err:["Erro ao sincronizar","#cf3f7a"],auth:["Reconectar","#cf3f7a"]};
+function conn(){const c=store.get(CK,null);if(c&&c.off)return null;if(c&&c.repo&&c.token)return c;const p=store.get(PK,null);return p&&p.repo&&p.token?{repo:p.repo,token:p.token,via:"painel"}:null}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("on"),2600)}
+function setSync(s){syncS=s;const b=$("#syncbtn");b.querySelector(".t").textContent=SL[s][0];b.style.setProperty("--c",SL[s][1]);const d=$("#dlgc .st");if(d){d.style.setProperty("--c",SL[s][1]);d.lastChild.textContent=SL[s][0]}}
+const b64e=s=>{const b=new TextEncoder().encode(s);let o="";for(let i=0;i<b.length;i+=8192)o+=String.fromCharCode.apply(null,b.subarray(i,i+8192));return btoa(o)};
+const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(String(s).replace(/\s/g,"")),c=>c.charCodeAt(0)));
+const b64u=s=>b64e(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const ub64=s=>b64d(String(s).replace(/-/g,"+").replace(/_/g,"/"));
+function gh(c,path,opt={}){return fetch(`https://api.github.com/repos/${c.repo}${path}`,{...opt,cache:"no-store",headers:{Authorization:"Bearer "+c.token,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28",...(opt.headers||{})}})}
+const newer=(a,b)=>!a?(b||null):!b?a:((b.t||0)>(a.t||0)?b:a);
+function touch(){if(!APP||!conn())return;clearTimeout(sT);sT=setTimeout(sync,15000)}
+function contHTML(){const l=lastNote&&byId[lastNote.id];return l&&l.id!=="inicio"?`<p class="cont">Continuar de onde parou: <a href="#${l.id}">${esc(l.t)}</a></p>`:""}
+async function sync(){
+ clearTimeout(sT);const c=conn();if(!APP)return;if(!c){setSync("local");return}
+ if(syncing){again=true;return}
+ syncing=true;setSync("sync");
+ try{
+  for(let i=0;i<3;i++){
+   const r=await gh(c,"/contents/"+SYNC_FILE);
+   if(r.status===401||r.status===403){setSync("auth");return}
+   let remote={visited:[],last:null},sha;
+   if(r.ok){const j=await r.json();sha=j.sha;try{remote=Object.assign(remote,JSON.parse(b64d(j.content)))}catch(e){}}
+   else if(r.status!==404)throw new Error("HTTP "+r.status);
+   const before=visited.size,lb=JSON.stringify(lastNote);
+   (remote.visited||[]).forEach(x=>visited.add(x));lastNote=newer(lastNote,remote.last);
+   if(visited.size!==before){store.set("cm-visited",[...visited]);updateProg();G&&G.refresh();if(location.hash.slice(1)==="indice")showIndex()}
+   if(JSON.stringify(lastNote)!==lb){store.set("cm-last",lastNote);const ce=$("#note .cont");if(cur==="inicio"){const h=contHTML();if(ce)ce.outerHTML=h||"";else if(h)$("#note .lead")?.insertAdjacentHTML("afterend",h)}}
+   const rv=new Set(remote.visited||[]);
+   if(rv.size===visited.size&&[...visited].every(x=>rv.has(x))&&JSON.stringify(lastNote)===JSON.stringify(remote.last||null))break;
+   const body={visited:[...visited].sort(),last:lastNote,updated:new Date().toISOString()};
+   const w=await gh(c,"/contents/"+SYNC_FILE,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Cérebro médico: progresso",content:b64e(JSON.stringify(body,null,1)),...(sha?{sha}:{})})});
+   if(w.ok)break;
+   if(w.status===401||w.status===403){setSync("auth");return}
+   if(w.status!==409&&w.status!==422)throw new Error("HTTP "+w.status);
+  }
+  setSync("ok");
+ }catch(e){setSync(navigator.onLine===false?"off":"err")}
+ finally{syncing=false;if(again){again=false;setTimeout(sync,400)}}
+}
+async function connectWith(repo,token){
+ token=String(token||"").trim();repo=String(repo||"").trim();
+ const m=token.match(/conectar=([\w-]+)/)||(/^eyJ[\w-]+$/.test(token)?[0,token]:null);
+ if(m){try{const o=JSON.parse(ub64(m[1]));repo=o.r;token=o.t}catch(e){throw new Error("Esse código de conexão não está completo. Copie de novo.")}}
+ repo=repo.replace(/^https?:\/\/github\.com\//i,"").replace(/\.git$/,"").replace(/\/+$/,"");
+ if(!/^[\w.-]+\/[\w.-]+$/.test(repo))throw new Error("Escreva o repositório no formato usuario/painel-dados.");
+ if(!token)throw new Error("Cole o token do GitHub ou o código de conexão.");
+ const c={repo,token};let r;
+ try{r=await gh(c,"")}catch(e){throw new Error("Sem internet agora. Tente de novo quando estiver conectado.")}
+ if(r.status===401)throw new Error("O GitHub recusou esse token. Confira se copiou ele inteiro.");
+ if(!r.ok)throw new Error("Não encontrei "+repo+" com esse token. Confira o nome e se o token tem acesso a ele.");
+ const j=await r.json();
+ if(!j.private)throw new Error("Esse repositório é público: seu progresso ficaria visível para qualquer pessoa. Use um repositório privado.");
+ if(j.permissions&&j.permissions.push===false)throw new Error("O token só pode ler. Dê a ele a permissão “Contents: Read and write”.");
+ store.set(CK,c);return c;
+}
+function openDlg(html){$("#dlgc").innerHTML=html;const d=$("#dlg");if(!d.open){try{d.showModal()}catch(e){d.setAttribute("open","")}}
+ $("#dlgc").querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>d.close())}
+$("#dlg").addEventListener("click",e=>{if(e.target===$("#dlg"))$("#dlg").close()});
+function syncDialog(msg){
+ const c=conn(),p=store.get(PK,null);
+ if(c){
+  openDlg(`<h2 tabindex="-1" autofocus>Sincronização</h2><p class="st" style="--c:${SL[syncS][1]}"><i></i>${SL[syncS][0]}</p>
+   <p>Seu progresso (notas abertas e a última nota lida) fica salvo no repositório privado <b>${esc(c.repo)}</b>, no arquivo <b>cerebro/progresso.json</b>, e aparece igual em todos os aparelhos conectados.${c.via==="painel"?" Este aparelho usa a mesma conexão do Meu painel.":""}</p>
+   ${syncS==="auth"?'<p class="msg">O GitHub recusou o token (pode ter vencido). Desconecte e conecte de novo com um token novo.</p>':""}
+   <div class="acts"><button class="btn ghost" id="dx">Desconectar este aparelho</button><button class="btn ghost" id="qrb">Conectar outro aparelho</button><button class="btn" id="sn">Sincronizar agora</button></div><div id="qra"></div>`);
+  $("#sn").onclick=()=>sync();
+  $("#dx").onclick=()=>{store.set(CK,{off:true});setSync("local");$("#dlg").close();toast("Este aparelho agora guarda o progresso só aqui.")};
+  $("#qrb").onclick=()=>showQR(c);
+  return;
+ }
+ openDlg(`<h2 tabindex="-1" autofocus>Sincronizar entre aparelhos</h2>
+  <p>Sem conexão, o progresso (notas abertas e a última nota lida) fica só neste aparelho. Para ficar igual em todos, use o mesmo repositório privado e o mesmo token do seu <b>Meu painel</b>.</p>
+  ${p&&p.token?'<div class="acts" style="justify-content:flex-start;margin:0 0 6px"><button class="btn" id="usep">Usar a conexão do Meu painel</button></div>':""}
+  <form id="cf"><label for="cr">Repositório privado</label><input id="cr" value="${esc((p&&p.repo)||DEF_REPO)}" autocomplete="off">
+  <label for="ct">Token do GitHub ou código de conexão</label><input id="ct" type="password" placeholder="github_pat_… ou código de outro aparelho" autocomplete="off">
+  <details><summary>Onde consigo isso?</summary><ol>
+   <li>Num aparelho já conectado, abra <b>Sincronizar › Conectar outro aparelho</b>: leia o QR code ou copie o código e cole aqui.</li>
+   <li>Ou use o mesmo token do Meu painel. Se precisar de um novo: abra <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>, escolha <b>Only select repositories</b> › <b>painel-dados</b>, adicione <b>Contents: Read and write</b> e gere o token.</li></ol></details>
+  <p class="msg" id="cm">${esc(msg||"")}</p>
+  <div class="acts"><button type="button" class="btn ghost" data-close>Agora não</button><button class="btn" id="cgo">Conectar</button></div></form>`);
+ const done=()=>{$("#dlg").close();toast("Conectado. Sincronizando…");sync()};
+ if($("#usep"))$("#usep").onclick=()=>{store.set(CK,null);try{localStorage.removeItem(CK)}catch(e){}done()};
+ $("#cf").onsubmit=async e=>{e.preventDefault();const b=$("#cgo");b.disabled=true;b.textContent="Conectando…";$("#cm").textContent="";
+  try{await connectWith($("#cr").value,$("#ct").value);done()}catch(err){$("#cm").textContent=err.message;b.disabled=false;b.textContent="Conectar"}};
+}
+let qrP=null;
+const loadQR=()=>qrP||(qrP=new Promise((res,rej)=>{if(window.qrcode)return res();const sc=document.createElement("script");sc.src="vendor/qrcode.js";sc.onload=res;sc.onerror=()=>{qrP=null;rej()};document.head.appendChild(sc)}));
+async function showQR(c){
+ const link=location.origin+location.pathname+"#conectar="+b64u(JSON.stringify({r:c.repo,t:c.token})),code=b64u(JSON.stringify({r:c.repo,t:c.token}));
+ let svg="";try{await loadQR();const q=qrcode(0,"M");q.addData(link);q.make();svg=q.createSvgTag({cellSize:4,margin:2,scalable:true})}catch(e){}
+ $("#qra").innerHTML=`<p style="margin-top:14px">No outro aparelho, leia o QR code com a câmera: ele abre o Cérebro já conectado. No app instalado do iPhone, toque em <b>Sincronizar</b> e cole o código.</p>${svg?`<div class="qr">${svg}</div>`:""}<p>O código dá acesso ao seu repositório privado: não mostre nem envie para outras pessoas.</p><div class="acts"><button class="btn ghost" id="cc">Copiar código</button></div>`;
+ $("#cc").onclick=async()=>{try{await navigator.clipboard.writeText(code);toast("Código copiado.")}catch(e){prompt("Copie o código:",code)}};
+}
+const standalone=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+function showInst(){$("#instbtn").hidden=!APP||standalone()||!(deferredPrompt||isIOS)}
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;showInst()});
+addEventListener("appinstalled",()=>{deferredPrompt=null;showInst();toast("App instalado.")});
+$("#instbtn").onclick=async()=>{
+ if(deferredPrompt){deferredPrompt.prompt();try{await deferredPrompt.userChoice}catch(e){}deferredPrompt=null;showInst();return}
+ openDlg(`<h2 tabindex="-1" autofocus>Instalar no iPhone ou iPad</h2><ol><li>Abra este endereço no <b>Safari</b>.</li><li>Toque em <b>Compartilhar</b> (o quadrado com a seta para cima).</li><li>Escolha <b>Adicionar à Tela de Início</b> e confirme.</li></ol><p>O Cérebro passa a abrir como app, em tela cheia, e funciona sem internet com a última versão que você abriu.</p><div class="acts"><button class="btn" data-close>Entendi</button></div>`)};
+$("#syncbtn").onclick=()=>syncDialog();
+window.__cm={sync:()=>sync(),code:()=>{const c=conn();return c?b64u(JSON.stringify({r:c.repo,t:c.token})):null}};
+function appInit(){
+ if(!APP)return;
+ if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+ $("#syncbtn").hidden=false;showInst();
+ setSync(conn()?"sync":"local");sync();
+ document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")sync();else if(sT)sync()});
+ addEventListener("online",()=>sync());
+ setInterval(()=>{if(document.visibilityState==="visible"&&conn())sync()},120000);
+}
+boot().then(appInit).catch(()=>{$("#note").innerHTML='<p class="fallback">Não foi possível carregar as notas.</p>'});
 
 function loadMaterials(){
  if(matPromise)return matPromise;
@@ -271,11 +433,13 @@ const extIcon='<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M1
 function open(id){
  const n=byId[id];if(!n)return;cur=id;
  visited.add(id);store.set("cm-visited",[...visited]);updateProg();
+ if(id!=="inicio"){lastNote={id,t:Date.now()};store.set("cm-last",lastNote)}touch();
  const c=COL[n.a]||"#888",fwd=new Set(n.l),rel=n.b.filter(x=>x!=="inicio"&&!fwd.has(x)).map(x=>byId[x]);
  document.title=`${n.t} · Cérebro médico`;
  const per=(n.p||[]).length?` · ${n.p.map(p=>p+"º").join(", ")} período`:"";
  let newsHTML="";
- if(id==="inicio"&&news.length){newsHTML=`<div class="news"><b>Novidades do Drive</b><ul>${news.slice(-5).reverse().map(u=>`<li>${esc(u.d)}: ${esc(u.s)}</li>`).join("")}</ul></div>`}
+ if(id==="inicio")newsHTML+=contHTML();
+ if(id==="inicio"&&news.length){newsHTML+=`<div class="news"><b>Novidades do Drive</b><ul>${news.slice(-5).reverse().map(u=>`<li>${esc(u.d)}: ${esc(u.s)}</li>`).join("")}</ul></div>`}
  $("#note").innerHTML=`
   <div class="topnav">${id!=="inicio"?'<button data-go="inicio">Início</button>':''}<button data-go="indice">Índice</button></div>
   <div class="crumbs"><span class="pill" style="--c:${c}">${dotHTML(c)}${esc(n.a)}</span><span>${esc(n.k==="conceito"||n.k==="mapa"?n.d:KIND[n.k]||n.k)}${esc(per)}</span></div>
@@ -475,7 +639,7 @@ function buildGraph(){
    nodes.forEach((o,i)=>{o.x=from[i][0]+(to[i][0]-from[i][0])*e;o.y=from[i][1]+(to[i][1]-from[i][1])*e});draw();if(u>=1){tm.stop()}});
   fit(D)}
  fit();paint();
- return{select(id){sel=(id&&id!=="inicio")?id:null;paint();if(sel)fitTo(nb[sel]);else fit(400)},filter(){paint();fit(400)},setMode(m){setMode(m);paint()}};
+ return{refresh(){paint()},select(id){sel=(id&&id!=="inicio")?id:null;paint();if(sel)fitTo(nb[sel]);else fit(400)},filter(){paint();fit(400)},setMode(m){setMode(m);paint()}};
 }
 $("#pk-go").onclick=()=>{$("#peek").classList.remove("on");$("#reader").scrollIntoView({block:"start"})};
 }
